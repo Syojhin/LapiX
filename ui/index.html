@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LapiX</title>
+  <link rel="icon" type="image/x-icon" href="assets/app_icon.ico">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app-container">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="brand-wrapper">
+        <img src="assets/logo.png" alt="LapiX Logo" class="brand-logo-img" id="brand-logo">
+        <div class="brand-info">
+          <div class="brand-title">
+            LapiX
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="engine-pill hardware-active" id="hardware-badge">
+          <span class="engine-status-indicator"></span>
+          <span id="engine-label">ENGINE: INITIALIZING...</span>
+        </div>
+        <button class="header-btn" id="btn-purge-cache" title="Purge ~/.lapix/cache/ media files">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          PURGE CACHE
+        </button>
+      </div>
+    </header>
+
+    <!-- INGEST DOCK (URL INPUT & DISPATCH) -->
+    <section class="ingest-card">
+      <div class="url-input-container">
+        <div class="input-glow-wrapper">
+          <svg class="url-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+          <input 
+            type="text" 
+            id="stream-url-input" 
+            class="url-input" 
+            placeholder="Paste public video URL (TikTok, YouTube Shorts/Videos, X, Instagram Reels, Twitch, Reddit)..."
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button class="btn-clipboard" id="btn-paste-clipboard" title="Paste from clipboard">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
+            PASTE
+          </button>
+        </div>
+
+        <button class="btn-fetch" id="btn-fetch">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+            <rect x="3" y="17" width="18" height="4" rx="1"></rect>
+          </svg>
+          <span>FETCH STREAM</span>
+        </button>
+      </div>
+
+      <!-- Ingest Progress -->
+      <div class="ingest-progress-container" id="ingest-progress-container">
+        <div class="progress-track">
+          <div class="progress-bar" id="ingest-progress-bar"></div>
+        </div>
+        <div class="progress-details">
+          <span id="ingest-status-text">Connecting to CDN stream...</span>
+          <span id="ingest-speed-text">0.0 MB/s</span>
+        </div>
+      </div>
+
+      <!-- Platforms Ticker -->
+      <div class="supported-platforms">
+        <span>DIRECT PIPELINE:</span>
+        <span class="platform-tag">TIKTOK</span>
+        <span class="platform-tag">YT SHORTS</span>
+        <span class="platform-tag">X / TWITTER</span>
+        <span class="platform-tag">INSTAGRAM</span>
+        <span class="platform-tag">TWITCH</span>
+        <span class="platform-tag">REDDIT</span>
+      </div>
+    </section>
+
+    <!-- VIEWER STAGE -->
+    <main class="viewer-card" id="viewer-card">
+      <div class="viewer-viewport" id="viewer-viewport">
+
+        <!-- Standby Placeholder -->
+        <div class="standby-state" id="standby-state">
+          <div class="standby-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </div>
+          <h3>Awaiting Master Stream Ingest</h3>
+          <p>Provide any public video URL above. LapiX will capture the bit-for-bit master stream, feed an instant zero-latency CSS orientation canvas, and prepare lossless hardware export.</p>
+        </div>
+
+        <!-- Video Player Stage -->
+        <div class="video-stage-container" id="video-stage-container">
+          <video id="player-video" loop playsinline></video>
+        </div>
+
+        <!-- HUD Overlay -->
+        <div class="viewer-hud-overlay" id="viewer-hud" style="display: none;">
+          <div class="hud-group">
+            <div class="hud-badge accent" id="hud-resolution">1080 x 1920</div>
+            <div class="hud-badge" id="hud-duration">00:00</div>
+            <div class="hud-badge" id="hud-angle-pill">ROTATION: 0°</div>
+          </div>
+          <div class="hud-group">
+            <div class="hud-badge lossless-pill">
+              <span class="indicator"></span>
+              <span>ZERO-LATENCY PREVIEW (LOSSLESS)</span>
+            </div>
+            <button class="hud-btn-fullscreen" id="btn-hud-fullscreen" title="Toggle Fullscreen (F)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Card (Bottom HUD) -->
+        <div class="stream-info-overlay" id="stream-info-overlay" style="display: none;">
+          <div style="display: flex; flex-direction: column; overflow: hidden;">
+            <span class="stream-title" id="stream-title-display">Video Stream</span>
+            <span class="stream-creator" id="stream-creator-display">@uploader</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIDEO TIMELINE TRIMMER & PRECISION SCRUBBER -->
+      <div class="trimmer-panel" id="trimmer-panel">
+        <div class="trimmer-meta">
+          <div class="trim-badge-group">
+            <span class="trim-indicator-title">TRIM:</span>
+            <div class="trim-time-badge" id="badge-in-time" title="Trim Start">IN: 00:00.0</div>
+            <div class="trim-time-badge playhead-badge" id="badge-playhead-time" title="Current Playhead">POS: 00:00.0</div>
+            <div class="trim-time-badge" id="badge-out-time" title="Trim End">OUT: 00:00.0</div>
+            <div class="trim-time-badge highlight" id="badge-duration-time" title="Trimmed Duration">CLIP: 00:00.0</div>
+          </div>
+          <div class="trim-actions-group">
+            <button class="trim-reset-btn" id="btn-reset-trim" disabled title="Reset In/Out Points to Full Video">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              FULL CLIP
+            </button>
+            <button class="trim-action-btn fullscreen-toggle" id="btn-fullscreen" disabled title="Toggle Fullscreen (F)">
+              <span id="fullscreen-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+              </span>
+              <span id="fullscreen-text">FULLSCREEN</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="timeline-track-container" id="timeline-track-container">
+          <div class="timeline-track" id="timeline-track">
+            <!-- Shaded Out Regions -->
+            <div class="trim-region-dimmed left" id="region-dimmed-left"></div>
+            <div class="trim-region-active" id="region-active"></div>
+            <div class="trim-region-dimmed right" id="region-dimmed-right"></div>
+
+            <!-- In Handle (Draggable) -->
+            <div class="trim-handle handle-in" id="handle-in" title="Drag to set Start Cut">
+              <div class="handle-grip"></div>
+              <div class="handle-label">IN</div>
+            </div>
+
+            <!-- Playhead (Current Position) -->
+            <div class="timeline-playhead" id="timeline-playhead">
+              <div class="playhead-cap"></div>
+              <div class="playhead-line"></div>
+            </div>
+
+            <!-- Out Handle (Draggable) -->
+            <div class="trim-handle handle-out" id="handle-out" title="Drag to set End Cut">
+              <div class="handle-grip"></div>
+              <div class="handle-label">OUT</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROL DOCK -->
+      <footer class="control-dock">
+        <div class="dock-group">
+          <button class="dock-btn primary-action" id="btn-rotate-left" disabled title="Rotate 90° Counter-Clockwise">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            ROTATE 90° LEFT
+          </button>
+
+          <button class="dock-btn primary-action" id="btn-rotate-right" disabled title="Rotate 90° Clockwise">
+            ROTATE 90° RIGHT
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+            </svg>
+          </button>
+
+          <button class="dock-btn" id="btn-rotate-reset" disabled title="Reset Orientation to 0°">
+            RESET
+          </button>
+
+          <div class="orientation-readout" id="orientation-readout">
+            0° ORIGINAL
+          </div>
+        </div>
+
+        <div class="dock-group">
+          <button class="dock-btn" id="btn-play-pause" disabled title="Toggle Play / Pause">
+            <span id="play-pause-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            </span>
+            <span id="play-pause-text">PLAY</span>
+          </button>
+
+          <!-- Volume Controls -->
+          <div class="volume-dock-control">
+            <button class="dock-btn" id="btn-mute" disabled title="Toggle Audio Mute" style="padding: 7px 9px;">
+              <span id="mute-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+              </span>
+            </button>
+            <div class="volume-slider-wrapper">
+              <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" disabled title="Audio Volume">
+            </div>
+            <span class="volume-readout" id="volume-readout">100%</span>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <!-- EXPORT BAR -->
+    <section class="export-bar">
+      <div class="export-bar-left">
+        <!-- Codec Pipeline -->
+        <div class="codec-selector-group">
+          <span class="codec-label">CODEC:</span>
+          <div class="codec-toggle-track">
+            <button class="codec-toggle-btn active" id="btn-codec-h264" data-codec="h264" title="Universal H.264 Compatibility">
+              H.264
+            </button>
+            <button class="codec-toggle-btn" id="btn-codec-hevc" data-codec="hevc" title="High Efficiency H.265 / HEVC">
+              H.265
+            </button>
+          </div>
+        </div>
+
+        <!-- Destination Folder Selector -->
+        <div class="destination-folder-group">
+          <span class="codec-label">DESTINATION:</span>
+          <div class="destination-pill" id="btn-select-folder" title="Click to choose storage destination folder">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span class="destination-name-display" id="destination-folder-name">Desktop</span>
+            <span class="destination-change-tag">CHANGE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Render Action Button (Fixed duplicate icon glitch) -->
+      <button class="btn-render" id="btn-render" disabled>
+        <span class="render-icon-wrapper" id="render-icon-wrapper">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </span>
+        <span id="render-btn-text">RENDER TO DESKTOP</span>
+      </button>
+    </section>
+
+    <!-- STATUS FOOTER -->
+    <footer class="footer-bar">
+      <div class="footer-left">
+        <span class="footer-dest-link" id="footer-destination-link" title="Click to change destination folder">
+          DESTINATION: <strong id="footer-destination-name">Desktop</strong>
+        </span>
+        <span id="cache-footprint">CACHE: 0 MB</span>
+      </div>
+      <div class="footer-credits">
+        <span>MADE BY <strong class="syojhin-lara-glow">SYOJHIN & LARA</strong></span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- TOAST NOTIFICATIONS CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- UI CONTROLLER SCRIPT -->
+  <script src="app.js"></script>
+</body>
+</html>
