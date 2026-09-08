@@ -1,0 +1,31 @@
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# PyInstaller & Compilation Artifacts
+build/
+dist/
+*.spec
+
+# Runtime Cache & Logs
+*.log
+.lapix/
+.lapix_cache/
+
+# System & Editor Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.agents/
+.gemini/
+
+# Binaries & Archives (distributed via GitHub Releases)
+*.exe
+*.zip
