@@ -207,9 +207,8 @@ class Api:
 
         try:
             if _ACTIVE_WINDOW:
-                # 20 = FileDialog.FOLDER in pywebview
                 result = _ACTIVE_WINDOW.create_file_dialog(
-                    dialog_type=20,
+                    dialog_type=webview.FileDialog.FOLDER,
                     directory=initial_dir
                 )
                 if result and len(result) > 0:
@@ -264,20 +263,54 @@ class Api:
         if sys.platform == "win32":
             try:
                 import ctypes
+                import time
+                from ctypes import wintypes
+
                 user32 = ctypes.windll.user32
                 kernel32 = ctypes.windll.kernel32
-                if user32.OpenClipboard(0):
-                    try:
-                        CF_UNICODETEXT = 13
-                        handle = user32.GetClipboardData(CF_UNICODETEXT)
-                        if handle:
-                            kernel32.GlobalLock.restype = ctypes.c_wchar_p
-                            ptr = kernel32.GlobalLock(handle)
-                            text = str(ptr) if ptr else ""
-                            kernel32.GlobalUnlock(handle)
-                            return text.strip()
-                    finally:
-                        user32.CloseClipboard()
+
+                # Explicit Win32 64-bit/32-bit prototypes to prevent pointer truncation and 0xc0000005 crash
+                user32.OpenClipboard.argtypes = [wintypes.HWND]
+                user32.OpenClipboard.restype = wintypes.BOOL
+                user32.CloseClipboard.argtypes = []
+                user32.CloseClipboard.restype = wintypes.BOOL
+                user32.IsClipboardFormatAvailable.argtypes = [wintypes.UINT]
+                user32.IsClipboardFormatAvailable.restype = wintypes.BOOL
+                user32.GetClipboardData.argtypes = [wintypes.UINT]
+                user32.GetClipboardData.restype = wintypes.HANDLE
+
+                kernel32.GlobalLock.argtypes = [wintypes.HGLOBAL]
+                kernel32.GlobalLock.restype = wintypes.LPVOID
+                kernel32.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+                kernel32.GlobalUnlock.restype = wintypes.BOOL
+
+                CF_UNICODETEXT = 13
+                if not user32.IsClipboardFormatAvailable(CF_UNICODETEXT):
+                    return ""
+
+                # Non-blocking retry if clipboard is temporarily locked by another app
+                opened = False
+                for _ in range(5):
+                    if user32.OpenClipboard(None):
+                        opened = True
+                        break
+                    time.sleep(0.01)
+
+                if not opened:
+                    return ""
+
+                try:
+                    handle = user32.GetClipboardData(CF_UNICODETEXT)
+                    if handle:
+                        ptr = kernel32.GlobalLock(handle)
+                        if ptr:
+                            try:
+                                text = ctypes.wstring_at(ptr)
+                                return text.strip() if text else ""
+                            finally:
+                                kernel32.GlobalUnlock(handle)
+                finally:
+                    user32.CloseClipboard()
             except Exception as e:
                 logger.debug(f"Direct ctypes clipboard read error: {e}")
 
